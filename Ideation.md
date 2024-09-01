@@ -50,5 +50,3 @@ contract OmnichainContract {
 - **Consistency:** Ensures that data is always up-to-date across chains, preventing inconsistencies.
 - **Reduced Complexity:** Simplifies development by treating cross-chain state management as just another field in the contract.
 - **Interoperability:** Enables seamless integration of multiple blockchain ecosystems, enhancing user experience.
-
-Would you like to explore more specific implementation details or discuss any of these use cases in-depth?
