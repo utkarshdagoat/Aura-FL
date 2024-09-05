@@ -11,22 +11,25 @@ function matElemSum(a: Array<Array<Field>>): Field {
             sum.add(a[i][j]);
         }
     }
-
     return sum;
 }
 
 
 export function conv2D(
-    input: Array<Array<Array<Field>>>, 
-    weights:Array<Array<Array<Array<Field>>>>, 
+    input: Array<Array<Array<Field>>>,
+    weights: Array<Array<Array<Array<Field>>>>,
     bias: Array<Field>,
-    kernelSize: number, 
-    strides: number
+    kernelSize: number,
+    strides: number,
 ): Array<Array<Array<Field>>> {
     const nRows = input.length;
     const nCols = input[0].length;
     const nChannels = input[0][0].length;
     const nFilters = weights[0][0][0].length;
+
+    if(nCols === 0 || nRows === 0 || nChannels === 0) {
+        return Array.from(Array(0), () => Array.from(Array(0), () => Array(0).fill(Field.from(0))));
+    }
     const outRows = Math.floor((nRows - kernelSize) / strides) + 1;
     const outCols = Math.floor((nCols - kernelSize) / strides) + 1;
 

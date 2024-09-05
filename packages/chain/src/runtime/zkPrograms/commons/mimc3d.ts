@@ -1,4 +1,4 @@
-import { Field } from 'o1js';
+import { Circuit, Field } from 'o1js';
 import { mimcSponge } from './mimcsponge';
 
 
@@ -19,7 +19,10 @@ export function mimcHashMatrix3D(
     }
 
     const nInputs = inputs.length;
-    const nOutputs = 1;
+    if(nInputs === 0) {
+        return Field(0);
+    }
+    const nOutputs = 1
     const k = Field(0);
 
     const result = mimcSponge(nInputs, nOutputs, k, inputs, 91);
