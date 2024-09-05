@@ -3,45 +3,40 @@ import { mimcHashMatrix3D } from './commons/mimc3d';
 import { conv2D } from './commons/conv2D';
 import { relu } from './commons/relu';
 
-async function _headLayer(
-    nRows: Field,
-    nCols: Field,
-    nChannels: Field,
-    nFilters: Field,
-    kernelSize: Field,
-    strides: Field,
+async function headLayer(
+    nRows: number,
+    nCols: number,
+    nChannels: number,
+    nFilters: number,
+    kernelSize: number,
+    strides: number,
     in_hash: Field,
-    x: Field[][][]
+    x: Array<Array<Array<Field>>>
   ): Promise<Field> {
-    const nRowsBigInt = Number(nRows.toBigInt());
-    const nColsBigInt = Number(nCols.toBigInt());
-    const nChannelsBigInt = Number(nChannels.toBigInt());
-    const nFiltersBigInt = Number(nFilters.toBigInt());
-    const kernelSizeBigInt = Number(kernelSize.toBigInt());
-    const stridesBigInt = Number(strides.toBigInt());
 
-    const convLayerOutputRows = Math.floor((nRowsBigInt - kernelSizeBigInt) / stridesBigInt) + 1;
-    const convLayerOutputCols = Math.floor((nColsBigInt - kernelSizeBigInt) / stridesBigInt) + 1;
-    const convLayerOutputDepth = nFiltersBigInt;
+
+    const convLayerOutputRows = Math.floor((nRows - kernelSize) / strides) + 1;
+    const convLayerOutputCols = Math.floor((nCols - kernelSize) / strides) + 1;
+    const convLayerOutputDepth = nFilters;
     const scaleFactor = 10 ** 16;
   
-    const inputHash = mimcHashMatrix3D(nRowsBigInt, nColsBigInt, nChannelsBigInt, x);
+    const inputHash = mimcHashMatrix3D(nRows, nCols, nChannels, x);
     if (!inputHash.equals(in_hash)) {
       throw new Error('Input hash does not match the expected hash.');
     }
   
-    const W = Array(kernelSizeBigInt)
+    const W = Array(kernelSize)
       .fill(null)
       .map(() =>
-        Array(kernelSizeBigInt)
+        Array(kernelSize)
           .fill(null)
           .map(() =>
-            Array(nChannelsBigInt).fill(Array(nFiltersBigInt).fill(Field(0)))
+            Array(nChannels).fill(Array(nFilters).fill(Field(0)))
           )
       );
   
     const b = Array(nFilters).fill(Field(0));
-    const convOutput = conv2D(x,W,b,kernelSizeBigInt,stridesBigInt);
+    const convOutput = conv2D(x,W,b,kernelSize,strides);
     const activations = Array(convLayerOutputRows)
       .fill(null)
       .map(() =>
@@ -66,23 +61,27 @@ async function _headLayer(
     return outputHash;
 }
   
-export const headLayer = ZkProgram({
+export const headLayerProgram = ZkProgram({
     name:"headlayer",
     publicOutput:Field,
     methods:{
         headLayer:{
-            privateInputs:[
-                Field,
-                Field,
-                Field,
-                Field,
-                Field,
-                Field,
-                Field,
-                Array<Array<Array<Field>>>
-            ],
-            method:_headLayer
+            privateInputs:[],
+            async method(inHash:Field,x:Array<Array<Array<Field>>>):Promise<Field>{
+                const res =  (await headLayer(
+                    4+2,
+                    4+2,
+                    1,
+                    2,
+                    3,
+                    1,
+                    inHash,
+                    x
+                ));
+                return res
+
+            }
         }
     }
 })
-export class HeadLayerProof extends ZkProgram.Proof(headLayer){} 
+export class HeadLayerProof extends ZkProgram.Proof(headLayerProgram){} 
