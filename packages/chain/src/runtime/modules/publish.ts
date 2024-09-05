@@ -1,7 +1,9 @@
-import { Bool, Bytes, PublicKey, Struct, UInt32, UInt64 , Provable} from "o1js";
+import { Bool, Bytes, PublicKey, Struct, UInt32, UInt64, Provable } from "o1js";
 import runtime from "..";
 import { runtimeMethod, RuntimeModule, runtimeModule, state } from "@proto-kit/module";
 import { assert, State, StateMap } from "@proto-kit/protocol";
+import { inject } from "tsyringe";
+import { StakingRegistry } from "./staking";
 
 
 /**
@@ -62,7 +64,11 @@ type PublisherConfig = Record<string, never>;
 export class Publisher extends RuntimeModule<PublisherConfig> {
     @state() public TASKS_LENGTH = State.from<UInt32>(UInt32);
     @state() public tasks = StateMap.from<UInt32, Task>(UInt32, Task);
-    @state() public clients = StateMap.from<UInt32,Array<PublicKey>>(UInt32, Provable.Array(PublicKey,3));
+    @state() public clients = StateMap.from<UInt32, Array<PublicKey>>(UInt32, Provable.Array(PublicKey, 3));
+
+    // constructor(@inject("StakingRegistry") public stakingRegistry: StakingRegistry) {
+    //     super();
+    // }
 
     @runtimeMethod()
     public async addTask(
@@ -119,11 +125,18 @@ export class Publisher extends RuntimeModule<PublisherConfig> {
     }
 
     @runtimeMethod()
-    public async addClient(client: PublicKey,taskId:UInt32): Promise<void> {
+    public async addClient(client: PublicKey, taskId: UInt32): Promise<void> {
+        // const hasClienStaked = await this.stakingRegistry.hasStakedAddress(client);
+        // assert(hasClienStaked, "Client has not staked");
         const clients = (await this.clients.get(taskId)).value;
         assert(Bool.fromValue(clients.length < 3), "Only 3 clients can be added to a task");
         clients.push(client);
-        await this.clients.set(taskId,clients);
+        await this.clients.set(taskId, clients);
+    }
+
+    @runtimeMethod()
+    public async getTask(taskId: UInt32): Promise<Task> {
+        return (await this.tasks.get(taskId)).value;
     }
 
 }
