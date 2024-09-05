@@ -1,36 +1,70 @@
+import { Balance, Balances, TokenId, UInt64 } from "@proto-kit/library";
 import { runtimeMethod, RuntimeModule, runtimeModule, state } from "@proto-kit/module";
-import { State, StateMap } from "@proto-kit/protocol";
-import { Bool, PublicKey, UInt64 } from "o1js";
-
+import { assert, State, StateMap } from "@proto-kit/protocol";
+import { Bool, PublicKey } from "o1js";
+import { inject } from "tsyringe";
 type StakingRegistryConfig = Record<string, never>;
 
-
+export const TOKEN = TokenId.from(0);
+export const ZERO = UInt64.from(0);
 @runtimeModule()
 export class StakingRegistry extends RuntimeModule<StakingRegistryConfig> {
     @state() public stakes = StateMap.from<PublicKey, UInt64>(PublicKey, UInt64);
     @state() public hasStaked = StateMap.from<PublicKey, Bool>(PublicKey, Bool);
     @state() public isSlashed = StateMap.from<PublicKey, Bool>(PublicKey, Bool);
     @state() public slashTreasury = State.from<PublicKey>(PublicKey);
+    @state() public ADMIN = State.from<PublicKey>(PublicKey);
 
-    constructor (_slashTreasury: PublicKey) {
+    constructor(
+        _slashTreasury: PublicKey,
+        @inject("Balances") public balance: Balances,
+        _admin: PublicKey
+    ) {
         super();
-        this.slashTreasury.set(_slashTreasury); ;
+        this.slashTreasury.set(_slashTreasury);
+        this.ADMIN.set(_admin);
     }
 
     @runtimeMethod()
-    public async stake() {
-        //TODO: check msg.value
+    public async stake(amount: UInt64) {
+        const slashTreasuryAddress = (await this.slashTreasury.get()).value;
+        await this.balance.transfer(
+            TokenId.from(0),
+            this.transaction.sender.value,
+            slashTreasuryAddress,
+            amount
+        );
+        await this.stakes.set(this.transaction.sender.value, amount);
+        await this.hasStaked.set(this.transaction.sender.value, Bool.fromValue(true));
     }
 
     @runtimeMethod()
-    public async unstake(){
-        //TODO: check msg.value
+    public async unstake() {
+        const amount = await this.stakes.get(this.transaction.sender.value);
+        const hasBeenSlashed = await this.isSlashed.get(this.transaction.sender.value);
+        assert(hasBeenSlashed.value, "You have been slashed");
+        assert(amount.value.greaterThan(ZERO), "You have not staked any amount");
+
+        await this.balance.transfer(
+            TOKEN,
+            (await this.slashTreasury.get()).value,
+            this.transaction.sender.value,
+            amount.value
+        );
+        await this.stakes.set(this.transaction.sender.value,ZERO);
+        await this.hasStaked.set(this.transaction.sender.value, Bool.fromValue(false));
     }
 
     @runtimeMethod()
-    public async slash(){
-
+    public async slash() {
+        const amount = await this.stakes.get(this.transaction.sender.value);
+        const hasBeenSlashed = await this.isSlashed.get(this.transaction.sender.value);
+        assert(hasBeenSlashed.value.not(), "You have been slashed");
+        assert(amount.value.greaterThan(ZERO), "You have not staked any amount");
+        await this.stakes.set(this.transaction.sender.value, ZERO);
+        await this.isSlashed.set(this.transaction.sender.value, Bool.fromValue(true));
     }
+
 
     public async hasStakedAddress(address: PublicKey): Promise<Bool> {
         return (await this.hasStaked.get(address)).value;

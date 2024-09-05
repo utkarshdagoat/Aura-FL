@@ -4,8 +4,7 @@ import { runtimeMethod, RuntimeModule, runtimeModule, state } from "@proto-kit/m
 import { assert, State, StateMap } from "@proto-kit/protocol";
 import { inject } from "tsyringe";
 import { StakingRegistry } from "./staking";
-import { Balance, Balances } from "@proto-kit/library";
-
+import { Balance, Balances, TokenId ,UInt64 as _UInt64} from "@proto-kit/library";
 
 /**
  * Task
@@ -78,12 +77,14 @@ export class Publisher extends RuntimeModule<PublisherConfig> {
   @state() public TASKS_LENGTH = State.from<UInt32>(UInt32);
   @state() public tasks = StateMap.from<UInt32, Task>(UInt32, Task);
   @state() public clients = StateMap.from<UInt32, Array<PublicKey>>(UInt32, Provable.Array(PublicKey, 3));
-
+  @state() public SELF_ADDR = State.from<PublicKey>(PublicKey)
   constructor(
     @inject("StakingRegistry") public stakingRegistry: StakingRegistry,
-    @inject("Balances") public balances: Balances
+    @inject("Balances") public balances: Balances,
+    address: PublicKey
   ) {
     super();
+    this.SELF_ADDR.set(address);
   }
 
   @runtimeMethod()
@@ -128,18 +129,25 @@ export class Publisher extends RuntimeModule<PublisherConfig> {
   async _distributeFunds(taskId: UInt32) {
     const task = await this.tasks.get(taskId);
     const clients = (await this.clients.get(taskId)).value;
+    const selfAddr = await this.SELF_ADDR.get();
     const feePerEpoch = task.value.feePerEpoch;
     const epochs = task.value.epochs;
     const totalFee = feePerEpoch.mul(epochs);
     const feePerClient = totalFee.div(UInt64.from(clients.length));
-
-    //TODO: Add the fee to the clients
+    for (const client of clients) {
+      await this.balances.transfer(
+        TokenId.from(0),
+        selfAddr.value,
+        client,
+        Balance.from(feePerClient.toBigInt())
+      );
+    }
   }
 
   @runtimeMethod()
   public async addClient(client: PublicKey, taskId: UInt32): Promise<void> {
-    // const hasClienStaked = await this.stakingRegistry.hasStakedAddress(client);
-    // assert(hasClienStaked, "Client has not staked");
+    const hasClienStaked = await this.stakingRegistry.hasStakedAddress(client);
+    assert(hasClienStaked, "Client has not staked");
     const clients = (await this.clients.get(taskId)).value;
     assert(Bool.fromValue(clients.length < 3), "Only 3 clients can be added to a task");
     clients.push(client);
