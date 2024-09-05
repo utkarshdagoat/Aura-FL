@@ -234,7 +234,7 @@ function mimcFeistelRound(xL: Field, xR: Field, k: Field,nRounds:number): [Field
   return [xL, xR];
 }
 
-function mimcSponge(
+export function mimcSponge(
   nInputs: number,
   nOutputs: number,
   k: Field,
