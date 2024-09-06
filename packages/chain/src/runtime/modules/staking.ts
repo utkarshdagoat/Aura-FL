@@ -7,6 +7,8 @@ type StakingRegistryConfig = Record<string, never>;
 
 export const TOKEN = TokenId.from(0);
 export const ZERO = UInt64.from(0);
+import { KrumProof } from "../zkPrograms/krum";
+
 @runtimeModule()
 export class StakingRegistry extends RuntimeModule<StakingRegistryConfig> {
     @state() public stakes = StateMap.from<PublicKey, UInt64>(PublicKey, UInt64);
@@ -56,7 +58,8 @@ export class StakingRegistry extends RuntimeModule<StakingRegistryConfig> {
     }
 
     @runtimeMethod()
-    public async slash() {
+    public async slash(proof: KrumProof) {
+        proof.verify()
         const amount = await this.stakes.get(this.transaction.sender.value);
         const hasBeenSlashed = await this.isSlashed.get(this.transaction.sender.value);
         assert(hasBeenSlashed.value.not(), "You have been slashed");

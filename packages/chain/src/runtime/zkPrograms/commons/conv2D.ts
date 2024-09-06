@@ -64,28 +64,3 @@ export async function conv2D(
 };
 
 
-// export const conv2DProgram = ZkProgram({
-//     publicOutput: Conv2DPublicOutput,
-//     methods:{
-//         conv2D:{
-//             privateInputs: [
-//                 Provable.Array(Provable.Array(Provable.Array(Field, 28), 28), 1), 
-//                 Provable.Array(Provable.Array(Provable.Array(Provable.Array(Field, 28), 28), 3), 3), 
-//                 Provable.Array(Field, 3), 
-//                 Field, 
-//                 Field
-//             ],
-//             async method(
-//                 input, 
-//                 weights , 
-//                 bias, 
-//                 kernelSize, 
-//                 strides
-//             ): Promise<Conv2DPublicOutput>{
-//                 const res =  await conv2D(input, weights, bias, kernelSize, strides);
-//                 return res
-//             }
-//         }
-//     }
-// })
-

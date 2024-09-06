@@ -1,4 +1,4 @@
-import { Provable, Struct, UInt32, ZkProgram } from "o1js";
+import { Bool, Provable, Struct, UInt32, ZkProgram } from "o1js";
 export const NUM_OF_CLIENTS = 2;
 
 /// ref: https://github.com/zk-bankai/zk-Krum
@@ -54,7 +54,7 @@ export const Krum = ZkProgram({
     }
 })
 
-
+export class KrumProof extends ZkProgram.Proof(Krum) {}
 
 
 function krumScore(
@@ -88,7 +88,9 @@ function getStandardDeviation(score: UInt32Array): UInt32 {
         standardDev.add(diff.mul(diff))
     }
     standardDev = standardDev.div(NUM_OF_CLIENTS)
-    standardDev = Provable.if(standardDev.greaterThan(UInt32.from(1)), getSquareRoot(standardDev), UInt32.from(1));
+    standardDev = Provable.if(standardDev.greaterThan(UInt32.from(1)), standardDev, UInt32.from(1));
+    Provable.log(standardDev)
+    standardDev = getSquareRoot(standardDev)
     return standardDev;
 }
 
