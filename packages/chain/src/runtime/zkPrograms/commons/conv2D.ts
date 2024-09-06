@@ -1,4 +1,4 @@
-import { Field } from "o1js";
+import { Field, Provable, Struct, ZkProgram } from "o1js";
 import { ZERO } from "../../modules/staking";
 
 function matElemSum(a: Array<Array<Field>>): Field {
@@ -13,25 +13,25 @@ function matElemSum(a: Array<Array<Field>>): Field {
     }
     return sum;
 }
+export class Conv2DPublicOutput extends Struct({
+    output: Provable.Array(Provable.Array(Provable.Array(Field, 28), 28), 1)
+}) { }
 
-
-export function conv2D(
+export async function conv2D(
     input: Array<Array<Array<Field>>>,
     weights: Array<Array<Array<Array<Field>>>>,
     bias: Array<Field>,
-    kernelSize: number,
-    strides: number,
-): Array<Array<Array<Field>>> {
+    kernelSize: Field,
+    strides: Field,
+): Promise<Conv2DPublicOutput> {
     const nRows = input.length;
     const nCols = input[0].length;
     const nChannels = input[0][0].length;
     const nFilters = weights[0][0][0].length;
-
-    if(nCols === 0 || nRows === 0 || nChannels === 0) {
-        return Array.from(Array(0), () => Array.from(Array(0), () => Array(0).fill(Field.from(0))));
-    }
-    const outRows = Math.floor((nRows - kernelSize) / strides) + 1;
-    const outCols = Math.floor((nCols - kernelSize) / strides) + 1;
+    const kernelSizeInt = Number(kernelSize.toBigInt());
+    const stridesInt = Number(strides.toBigInt());
+    const outRows = Math.floor((nRows - kernelSizeInt) / stridesInt) + 1;
+    const outCols = Math.floor((nCols - kernelSizeInt) / stridesInt) + 1;
 
     let output: Array<Array<Array<Field>>> = Array.from(Array(outRows), () =>
         Array.from(Array(outCols), () => Array(nFilters).fill(0))
@@ -43,11 +43,11 @@ export function conv2D(
                 let sum = ZERO;
                 for (let c = 0; c < nChannels; c++) {
                     let kernelProduct = [];
-                    for (let x = 0; x < kernelSize; x++) {
+                    for (let x = 0; x < kernelSizeInt; x++) {
                         let row = [];
-                        for (let y = 0; y < kernelSize; y++) {
+                        for (let y = 0; y < kernelSizeInt; y++) {
                             row.push(
-                                input[i * (strides) + x][j * (strides) + y][c].mul(weights[x][y][c][k])
+                                input[i * (stridesInt) + x][j * (stridesInt) + y][c].mul(weights[x][y][c][k])
                             );
                         }
                         kernelProduct.push(row);
@@ -58,6 +58,34 @@ export function conv2D(
             }
         }
     }
+    return new Conv2DPublicOutput({
+        output: output
+    });
+};
 
-    return output;
-}
+
+// export const conv2DProgram = ZkProgram({
+//     publicOutput: Conv2DPublicOutput,
+//     methods:{
+//         conv2D:{
+//             privateInputs: [
+//                 Provable.Array(Provable.Array(Provable.Array(Field, 28), 28), 1), 
+//                 Provable.Array(Provable.Array(Provable.Array(Provable.Array(Field, 28), 28), 3), 3), 
+//                 Provable.Array(Field, 3), 
+//                 Field, 
+//                 Field
+//             ],
+//             async method(
+//                 input, 
+//                 weights , 
+//                 bias, 
+//                 kernelSize, 
+//                 strides
+//             ): Promise<Conv2DPublicOutput>{
+//                 const res =  await conv2D(input, weights, bias, kernelSize, strides);
+//                 return res
+//             }
+//         }
+//     }
+// })
+
