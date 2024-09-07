@@ -8,7 +8,7 @@ interface BalancesConfig {
 }
 
 @runtimeModule()
-export class BalancesWrapper extends BaseBalances<BalancesConfig> {
+export class Balances extends BaseBalances<BalancesConfig> {
     @state() public circulatingSupply = State.from<Balance>(Balance);
 
     @runtimeMethod()

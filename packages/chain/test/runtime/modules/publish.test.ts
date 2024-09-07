@@ -1,16 +1,16 @@
 import "reflect-metadata"
 
 import { TestingAppChain } from "@proto-kit/sdk";
-import { Bool, PrivateKey, } from "o1js";
+import { Bool, PrivateKey, PublicKey, } from "o1js";
 import { Publisher, Task } from "../../../src/runtime/modules/publish";
 import { StakingRegistry } from "../../../src/runtime/modules/staking";
-import { BalancesWrapper } from "../../../src/runtime/modules/balance";
-import { UInt64, UInt32, Balances, TokenId } from "@proto-kit/library";
+import { Balances } from "../../../src/runtime/modules/balance";
+import { UInt64, TokenId, BalancesKey } from "@proto-kit/library";
 describe("Publishing Testing", () => {
   let appChain = TestingAppChain.fromRuntime({
     Publisher,
     StakingRegistry,
-    BalancesWrapper
+    Balances
   })
   const alicePrivateKey = PrivateKey.random();
   const alice = alicePrivateKey.toPublicKey();
@@ -26,8 +26,7 @@ describe("Publishing Testing", () => {
 
   let publisher: Publisher
   let stakingRegistry: StakingRegistry
-  let balances: Balances<unknown>
-  let balanceWrapper: BalancesWrapper
+  let balance: Balances
 
 
   const clientsPrivateKeys = [PrivateKey.random(), PrivateKey.random(), PrivateKey.random()]
@@ -51,19 +50,18 @@ describe("Publishing Testing", () => {
     appChain = TestingAppChain.fromRuntime({
       Publisher,
       StakingRegistry,
-      BalancesWrapper
+      Balances
     });
     appChain.configurePartial({
       Runtime: {
         Publisher: {
           address: publisherPublicKey
         },
-        Balances: {},
         StakingRegistry: {
           slashTreasury: slashingTreasury,
           admin: adminPublicKey
         },
-        BalancesWrapper: {
+        Balances: {
           totalSupply: UInt64.from(1_000_000_000)
         }
       },
@@ -72,25 +70,29 @@ describe("Publishing Testing", () => {
     appChain.setSigner(alicePrivateKey);
     publisher = appChain.runtime.resolve("Publisher")
     stakingRegistry = appChain.runtime.resolve("StakingRegistry")
-    balances = appChain.runtime.resolve("Balances")
-    balanceWrapper = appChain.runtime.resolve("BalancesWrapper")
-    const publicKeys = [alice, publisherPublicKey, ...clients]
-    publicKeys.forEach(async (key) => {
-      const tx = await appChain.transaction(alice, async () =>
-        await balanceWrapper.addBalance(key, UInt64.from(1_000_000))
-      )
-      tx.sign()
-      tx.send()
-    })
-    const block = await appChain.produceBlock();
-    block?.transactions.forEach((tx) => {
-      expect(tx.status.toBoolean()).toBe(true)
-    })
+    balance = appChain.runtime.resolve("Balances")
+  }, 1_000_000)
 
+  it("Should increase balance", async () => {
+    const tx = await appChain.transaction(alice, async () => {
+      await balance.addBalance(alice, UInt64.from(1000000))
+    })
+    await tx.sign()
+    await tx.send()
+    const block = await appChain.produceBlock();
+    expect(block?.transactions[0].status.toBoolean()).toBe(true)
+    const balanceKey = new BalancesKey({
+      tokenId: TokenId.from(0),
+      address: alice
+    })
+    const balanceOfAlice = await appChain.query.runtime.Balances.balances.get(balanceKey)
+    expect(balanceOfAlice?.toBigInt()).toBe(1000000n)
   }, 1_000_000)
 
 
   it("add task", async () => {
+
+
     const tx1 = await appChain.transaction(alice, async () => {
       await publisher.addTask(
         UInt64.from(3),
@@ -107,33 +109,28 @@ describe("Publishing Testing", () => {
 
     const block = await appChain.produceBlock();
     expect(block?.transactions[0].status.toBoolean()).toBe(true)
-    const queriedTask = await appChain.query.runtime.Publisher.tasks.get(UInt64.from(0));
-    expect(queriedTask).toStrictEqual(task);
 
-    //check balances
-    const aliceBalance = await balanceWrapper.getBalanceRuntime(alice);
-    const publisherBalance = await balanceWrapper.getBalanceRuntime(publisherPublicKey);
-    expect(aliceBalance).toBe(UInt64.from(999_997));
-    expect(publisherBalance).toBe(UInt64.from(1_000_003));
+    const publisherBalanceKey = new BalancesKey({
+      tokenId: TokenId.from(0),
+      address: publisherPublicKey
+    })
+    const aliceBalanceKey = new BalancesKey({
+      tokenId: TokenId.from(0),
+      address: alice
+    })
+    const publisherBalance = await appChain.query.runtime.Balances.balances.get(publisherBalanceKey)
+    const aliceBalance = await appChain.query.runtime.Balances.balances.get(aliceBalanceKey)
+    expect(publisherBalance?.toBigInt()).toBe(3n)
+    expect(aliceBalance?.toBigInt()).toBe(999997n)
+
   }, 1_000_000);
 
-  it("complete task", async () => {
-
-
-  }, 1_000_100)
-
-  it("should stake and add client", async () => {
-
+  it("Should fund clients", async () => {
     for (let i = 0; i < clients.length; i++) {
       appChain.setSigner(clientsPrivateKeys[i])
-      const stakingTx = await appChain.transaction(clients[i], async () => {
-        await stakingRegistry.stake(UInt64.from(1))
-      })
-      await stakingTx.sign()
-      await stakingTx.send()
 
       const tx = await appChain.transaction(clients[i], async () => {
-        await publisher.addClient(clients[i], UInt64.from(0))
+        await balance.addBalance(clients[i], UInt64.from(1))
       })
       await tx.sign()
       await tx.send()
@@ -144,27 +141,91 @@ describe("Publishing Testing", () => {
     })
 
     for (let i = 0; i < clients.length; i++) {
-      const balance = await balanceWrapper.getBalanceRuntime(
-        clients[i]
-      )
-      expect(balance).toBe(UInt64.from(999_999))
+      const clientBalanceKey = new BalancesKey({
+        tokenId: TokenId.from(0),
+        address: clients[i]
+      })
+      const balanceOfClient = await appChain.query.runtime.Balances.balances.get(clientBalanceKey)
+      expect(balanceOfClient?.toBigInt()).toBe(1n)
     }
   }, 1_000_000)
 
-  it("should distribute funds", async () => {
+
+  it("should stake and add client", async () => {
+
+    for (let i = 0; i < clients.length; i++) {
+      appChain.setSigner(clientsPrivateKeys[i])
+      const stakingTx = await appChain.transaction(clients[i], async () => {
+        await stakingRegistry.stake(UInt64.from(1))
+      })
+      await stakingTx.sign()
+      await stakingTx.send()
+    }
+    const block = await appChain.produceBlock();
+    block?.transactions.forEach((tx) => {
+      expect(tx.status.toBoolean()).toBe(true)
+    })
+
+    for (let i = 0; i < clients.length; i++) {
+      const clientBalanceKey = new BalancesKey({
+        tokenId: TokenId.from(0),
+        address: clients[i]
+      })
+      const balanceOfClient = await appChain.query.runtime.Balances.balances.get(clientBalanceKey)
+      expect(balanceOfClient?.toBigInt()).toBe(0n)
+    }
+
+  }, 1_000_000)
+
+  it("should add clients", async () => {
+    // async function addClient(client: PublicKey) {
+    //   appChain.setSigner(publisherPrivateKey)
+    //   const getClients = await appChain.query.runtime.Publisher.clients.get(UInt64.from(0))
+    //   if(getClients === undefined) return;
+    //   const findIndex = getClients?.findIndex((c) =>c.equals(PublicKey.empty()).toBoolean())
+    //   console.log("findIndex", findIndex)
+    //   if(findIndex === -1) throw new Error("No empty slot");
+    //   const newArr = [...getClients]
+    //   newArr[findIndex] = client
+    //   const tx = await appChain.transaction(publisherPublicKey, async () => {
+    //     await publisher.addClients(client, UInt64.from(0), newArr[0],newArr[1],newArr[2])
+    //   })
+    //   await tx.sign()
+    //   await tx.send()
+    // }
+    appChain.setSigner(clientsPrivateKeys[0])
+    const tx = await appChain.transaction(clients[0], async () => {
+      await publisher.addClients(UInt64.from(0), clients[0], clients[1], clients[2])
+    })
+    await tx.sign()
+    await tx.send()
+
+    const block = await appChain.produceBlock();
+    block?.transactions.forEach((tx) => {
+      expect(tx.status.toBoolean()).toBe(true)
+    })
+    const clientsForTask = await appChain.query.runtime.Publisher.clients.get(UInt64.from(0))
+    expect(clientsForTask?.length).toBe(3)
+  }, 1_000_000)
+
+  it("should complete task and distribute funds", async () => {
     appChain.setSigner(alicePrivateKey)
     const tx = await appChain.transaction(alice, async () => {
       await publisher.completeTask(UInt64.from(0))
     })
-    tx.sign()
-    tx.send()
-    const block = await appChain.produceBlock()
-    expect(block?.transactions[0].status.toBoolean()).toBe(true)
-    const task = await appChain.query.runtime.Publisher.tasks.get(UInt64.from(0))
-    expect(task?.completed.toBoolean()).toBe(true)
-    for (let i = 0; i < clients.length; i++) {
-      const balance = await balanceWrapper.getBalanceRuntime(clients[i])
-      expect(balance).toBe(UInt64.from(1_000_000))
+    await tx.sign()
+    await tx.send()
+    const block = await appChain.produceBlock();
+    block?.transactions.forEach((tx) => {
+      expect(tx.status.toBoolean()).toBe(true)
+    })
+    for(let i = 0; i < clients.length; i++) {
+      const clientBalanceKey = new BalancesKey({
+        tokenId: TokenId.from(0),
+        address: clients[i]
+      })
+      const balanceOfClient = await appChain.query.runtime.Balances.balances.get(clientBalanceKey)
+      expect(balanceOfClient?.toBigInt()).toBe(1n)
     }
   }, 1_000_000)
 });

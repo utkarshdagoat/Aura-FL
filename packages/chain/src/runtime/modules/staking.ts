@@ -1,9 +1,9 @@
-import { Balance, Balances, TokenId, UInt64 } from "@proto-kit/library";
+import { TokenId, UInt64 } from "@proto-kit/library";
 import { runtimeMethod, RuntimeModule, runtimeModule, state } from "@proto-kit/module";
 import { assert, State, StateMap } from "@proto-kit/protocol";
 import { Bool, PublicKey } from "o1js";
 import { inject } from "tsyringe";
-
+import {Balances} from "./balance";
 export const TOKEN = TokenId.from(0);
 export const ZERO = UInt64.from(0);
 import { KrumProof } from "../zkPrograms/krum";

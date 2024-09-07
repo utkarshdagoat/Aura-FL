@@ -1,7 +1,6 @@
-import { Balance, VanillaRuntimeModules } from "@proto-kit/library";
+import { Balance, VanillaRuntimeModules,Balances } from "@proto-kit/library";
 import { ModulesConfig } from "@proto-kit/common";
 
-import { Balances } from "./modules/balances";
 
 export const modules = VanillaRuntimeModules.with({
   Balances,

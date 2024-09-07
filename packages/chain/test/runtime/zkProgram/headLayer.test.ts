@@ -41,7 +41,7 @@ describe("Head Layer test", () => {
             }
         });
         const inputTensor = tf.zeros([1, 6, 6, 1]);
-        const input  = inputTensor.arraySync();
+        const input = inputTensor.arraySync();
         if (typeof input === 'number') return;
         const inputUInt32 = input.flat(3).map((value) => {
             if (typeof value === 'number') {
@@ -60,10 +60,10 @@ describe("Head Layer test", () => {
             }
         })
 
-        const {verificationKey} = await headLayer.compile()
-        const proof = await headLayer.headLayer(inputUInt32, kernelUInt32, biasUInt32,convOuputUint32)
+        const { verificationKey } = await headLayer.compile()
+        const proof = await headLayer.headLayer(inputUInt32, kernelUInt32, biasUInt32, convOuputUint32)
         console.log(proof.toJSON())
         console.log(proof.verify())
-        console.log(await verify(proof,verificationKey))
+        console.log(await verify(proof, verificationKey))
     }, 100000)
 })
