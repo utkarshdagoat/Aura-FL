@@ -6,8 +6,6 @@ import { inject } from "tsyringe";
 import { StakingRegistry } from "./staking";
 import { Balance, TokenId, UInt64, UInt32 } from "@proto-kit/library";
 import { Balances } from "./balance";
-import { Prover } from "o1js/dist/node/lib/proof-system/zkprogram";
-import { asProver } from "o1js/dist/node/lib/provable/core/provable-context";
 /**
  * Task
  * @param name - The name of the task
@@ -61,13 +59,16 @@ export class Task extends Struct({
 interface PublisherConfig {
   address: PublicKey;
 }
+export class ClientValue extends Struct({
+  value: Provable.Array(PublicKey, 3),
+}) { }
 
 @runtimeModule()
 export class Publisher extends RuntimeModule<PublisherConfig> {
   @state() public TASKS_LENGTH = State.from<UInt64>(UInt64);
   @state() public tasks = StateMap.from<UInt64, Task>(UInt64, Task);
-  @state() public clients = StateMap.from<UInt64, Array<PublicKey>>(UInt64, Provable.Array(PublicKey, 3));
-  @state() public clientsIndex = StateMap.from<UInt64, UInt64>(UInt64,UInt64);
+  @state() public clients = StateMap.from<UInt64, ClientValue>(UInt64, ClientValue);
+  @state() public clientsIndex = StateMap.from<UInt64, UInt64>(UInt64, UInt64);
 
   constructor(
     @inject("StakingRegistry") public stakingRegistry: StakingRegistry,
@@ -108,7 +109,8 @@ export class Publisher extends RuntimeModule<PublisherConfig> {
     );
     await this.tasks.set(tasksLength.value, task);
     const clients = Array<PublicKey>(3).fill(PublicKey.empty());
-    await this.clients.set(tasksLength.value, clients);
+    const clientsValue =  new ClientValue({ value: clients });
+    await this.clients.set(tasksLength.value, clientsValue);
     const incrementTl = tasksLength.value.add(1);
     this.TASKS_LENGTH.set(incrementTl);
   }
@@ -127,7 +129,7 @@ export class Publisher extends RuntimeModule<PublisherConfig> {
 
   async _distributeFunds(taskId: UInt64) {
     const task = await this.tasks.get(taskId);
-    const clients = (await this.clients.get(taskId)).value;
+    const clients = (await this.clients.get(taskId)).value.value;
     const selfAddr = this.config.address;
     const feePerEpoch = task.value.feePerEpoch;
     const epochs = task.value.epochs;
@@ -149,19 +151,14 @@ export class Publisher extends RuntimeModule<PublisherConfig> {
   @runtimeMethod()
   public async addClients(
 
-    taskId: UInt64, 
-    clientOne:PublicKey,
-    clientTwo:PublicKey,
-    clientThree:PublicKey
+    taskId: UInt64,
+    clientOne: PublicKey,
+    clientTwo: PublicKey,
+    clientThree: PublicKey
   ): Promise<void> {
-   
-    asProver(()=>{
-      console.log(clientOne.toBase58())
-      console.log(clientTwo.toBase58())
-      console.log(clientThree.toBase58())
-    })
     const newClients = [clientOne, clientTwo, clientThree];
-    await this.clients.set(taskId, newClients);
+    const clientsValue = new ClientValue({ value: newClients });
+    await this.clients.set(taskId, clientsValue);
   }
 
   @runtimeMethod()
