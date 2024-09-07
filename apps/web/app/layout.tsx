@@ -1,14 +1,9 @@
 "use client";
 import "./globals.css";
-import { Inter as FontSans } from "next/font/google";
-import { cn } from "@/lib/utils";
-
-import AsyncLayoutDynamic from "@/containers/async-layout-dynamic";
-
-export const fontSans = FontSans({
-  subsets: ["latin"],
-  variable: "--font-sans",
-});
+import { GeistSans } from 'geist/font/sans';
+import { GeistMono } from 'geist/font/mono';
+import { ThemeProvider } from "@/components/theme-provider";
+// import AsyncLayoutDynamic from "@/containers/async-layout-dynamic";
 
 export default function RootLayout({
   children,
@@ -16,14 +11,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="h-full">
-      <body
-        className={cn(
-          "h-full bg-background font-sans antialiased",
-          fontSans.variable,
-        )}
-      >
-        <AsyncLayoutDynamic>{children}</AsyncLayoutDynamic>
+    <html lang="en" className={`${GeistSans.variable} ${GeistMono.variable}`}>
+      <body className={`${GeistSans.className}`}>
+        <ThemeProvider attribute="class" defaultTheme="dark">
+          {children}
+        </ThemeProvider>
       </body>
     </html>
   );
