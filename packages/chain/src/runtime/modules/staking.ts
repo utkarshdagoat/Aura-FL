@@ -3,11 +3,15 @@ import { runtimeMethod, RuntimeModule, runtimeModule, state } from "@proto-kit/m
 import { assert, State, StateMap } from "@proto-kit/protocol";
 import { Bool, PublicKey } from "o1js";
 import { inject } from "tsyringe";
-type StakingRegistryConfig = Record<string, never>;
 
 export const TOKEN = TokenId.from(0);
 export const ZERO = UInt64.from(0);
 import { KrumProof } from "../zkPrograms/krum";
+
+interface StakingRegistryConfig {
+    slashTreasury: PublicKey;
+    admin: PublicKey;
+}
 
 @runtimeModule()
 export class StakingRegistry extends RuntimeModule<StakingRegistryConfig> {
@@ -18,13 +22,9 @@ export class StakingRegistry extends RuntimeModule<StakingRegistryConfig> {
     @state() public ADMIN = State.from<PublicKey>(PublicKey);
 
     constructor(
-        _slashTreasury: PublicKey,
         @inject("Balances") public balance: Balances,
-        _admin: PublicKey
     ) {
         super();
-        this.slashTreasury.set(_slashTreasury);
-        this.ADMIN.set(_admin);
     }
 
     @runtimeMethod()

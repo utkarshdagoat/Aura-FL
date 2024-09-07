@@ -1,10 +1,10 @@
-import { Bool, Bytes, PublicKey, Struct, UInt32, UInt64, Provable } from "o1js";
+import { Bool, Bytes, PublicKey, Struct,   Provable } from "o1js";
 import runtime from "..";
 import { runtimeMethod, RuntimeModule, runtimeModule, state } from "@proto-kit/module";
 import { assert, State, StateMap } from "@proto-kit/protocol";
 import { inject } from "tsyringe";
 import { StakingRegistry } from "./staking";
-import { Balance, Balances, TokenId ,UInt64 as _UInt64} from "@proto-kit/library";
+import { Balance, Balances, TokenId ,UInt64 ,UInt32 } from "@proto-kit/library";
 
 /**
  * Task
@@ -54,37 +54,24 @@ export class Task extends Struct({
     });
   }
 
-  public toJSON() {
-    return {
-      epochs: this.epochs.toJSON(),
-      modelType: this.modelType.toJSON(),
-      modelSize: this.modelSize.toJSON(),
-      numOfLayers: this.numOfLayers.toJSON(),
-      activationFunction: this.activationFunction.toJSON(),
-      Optimizer: this.Optimizer.toJSON(),
-      completed: this.completed.toJSON(),
-      publisher: this.publisher.toJSON(),
-      feePerEpoch: this.feePerEpoch.toJSON()
-    }
-  }
 
 };
-
-type PublisherConfig = Record<string, never>;
+interface PublisherConfig {
+  address:PublicKey;
+}
 
 @runtimeModule()
 export class Publisher extends RuntimeModule<PublisherConfig> {
-  @state() public TASKS_LENGTH = State.from<UInt32>(UInt32);
-  @state() public tasks = StateMap.from<UInt32, Task>(UInt32, Task);
-  @state() public clients = StateMap.from<UInt32, Array<PublicKey>>(UInt32, Provable.Array(PublicKey, 3));
-  @state() public SELF_ADDR = State.from<PublicKey>(PublicKey)
+  @state() public TASKS_LENGTH = State.from<UInt64>(UInt64);
+  @state() public tasks = StateMap.from<UInt64, Task>(UInt64, Task);
+  @state() public clients = StateMap.from<UInt64, Array<PublicKey>>(UInt64, Provable.Array(PublicKey, 3));
+  
+  
   constructor(
     @inject("StakingRegistry") public stakingRegistry: StakingRegistry,
     @inject("Balances") public balances: Balances,
-    address: PublicKey
   ) {
     super();
-    this.SELF_ADDR.set(address);
   }
 
   @runtimeMethod()
@@ -97,7 +84,14 @@ export class Publisher extends RuntimeModule<PublisherConfig> {
     Optimizer: UInt64,
     feePerEpoch: UInt64
   ): Promise<void> {
-    //TODO: Check feePerEpoch*epochs >= message.value 
+    const totalFee = feePerEpoch.mul(epochs); 
+    assert(totalFee.greaterThan(UInt64.from(0)), "Fee must be greater than 0");
+    await this.balances.transfer(
+      TokenId.from(0),
+      this.transaction.sender.value,
+      this.config.address,
+      totalFee
+    )
     const tasksLength = await this.TASKS_LENGTH.get();
     const task = Task.from(
       epochs,
@@ -111,11 +105,12 @@ export class Publisher extends RuntimeModule<PublisherConfig> {
       feePerEpoch
     );
     await this.tasks.set(tasksLength.value, task);
-    this.TASKS_LENGTH.set(tasksLength.value.add(UInt32.from(1)));
+    const incrementTl = tasksLength.value.add(1);
+    this.TASKS_LENGTH.set(incrementTl);
   }
 
   @runtimeMethod()
-  public async completeTask(taskId: UInt32): Promise<void> {
+  public async completeTask(taskId: UInt64): Promise<void> {
     const sender = this.transaction.sender.value;
     const task = await this.tasks.get(taskId);
 
@@ -126,10 +121,10 @@ export class Publisher extends RuntimeModule<PublisherConfig> {
     await this._distributeFunds(taskId);
   }
 
-  async _distributeFunds(taskId: UInt32) {
+  async _distributeFunds(taskId: UInt64) {
     const task = await this.tasks.get(taskId);
     const clients = (await this.clients.get(taskId)).value;
-    const selfAddr = await this.SELF_ADDR.get();
+    const selfAddr = this.config.address;
     const feePerEpoch = task.value.feePerEpoch;
     const epochs = task.value.epochs;
     const totalFee = feePerEpoch.mul(epochs);
@@ -137,15 +132,15 @@ export class Publisher extends RuntimeModule<PublisherConfig> {
     for (const client of clients) {
       await this.balances.transfer(
         TokenId.from(0),
-        selfAddr.value,
+        selfAddr,
         client,
-        Balance.from(feePerClient.toBigInt())
+        feePerClient
       );
     }
   }
 
   @runtimeMethod()
-  public async addClient(client: PublicKey, taskId: UInt32): Promise<void> {
+  public async addClient(client: PublicKey, taskId: UInt64): Promise<void> {
     const hasClienStaked = await this.stakingRegistry.hasStakedAddress(client);
     assert(hasClienStaked, "Client has not staked");
     const clients = (await this.clients.get(taskId)).value;
@@ -155,7 +150,7 @@ export class Publisher extends RuntimeModule<PublisherConfig> {
   }
 
   @runtimeMethod()
-  public async getTask(taskId: UInt32): Promise<Task> {
+  public async getTask(taskId: UInt64): Promise<Task> {
     return (await this.tasks.get(taskId)).value;
   }
 

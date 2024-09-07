@@ -1,6 +1,8 @@
+import "reflect-metadata"
 import { UInt32, verify } from "o1js"
 import { headLayer } from "../../../src/runtime/zkPrograms/headLayer"
 import * as tf from "@tensorflow/tfjs"
+
 describe("Head Layer test", () => {
     it("should compile", async () => {
         const model = tf.sequential();
@@ -38,7 +40,8 @@ describe("Head Layer test", () => {
                 return UInt32.from(0)
             }
         });
-        const input = tf.zeros([1, 6, 6, 1]).arraySync();
+        const inputTensor = tf.zeros([1, 6, 6, 1]);
+        const input  = inputTensor.arraySync();
         if (typeof input === 'number') return;
         const inputUInt32 = input.flat(3).map((value) => {
             if (typeof value === 'number') {
@@ -47,10 +50,19 @@ describe("Head Layer test", () => {
                 return UInt32.from(0)
             }
         })
+        const convOutputTesnor = convLayer.apply(inputTensor) as tf.Tensor
+        const convOutput = convOutputTesnor.arraySync() as number[][][][];
+        const convOuputUint32 = convOutput[0].flat(2).map((value) => {
+            if (typeof value === 'number') {
+                return UInt32.from(Math.floor(Math.abs(value)))
+            } else {
+                return UInt32.from(0)
+            }
+        })
 
         const {verificationKey} = await headLayer.compile()
-        const proof = await headLayer.headLayer(inputUInt32, kernelUInt32, biasUInt32)
-        console.log(proof)
+        const proof = await headLayer.headLayer(inputUInt32, kernelUInt32, biasUInt32,convOuputUint32)
+        console.log(proof.toJSON())
         console.log(proof.verify())
         console.log(await verify(proof,verificationKey))
     }, 100000)
