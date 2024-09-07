@@ -4,11 +4,13 @@ import { TestingAppChain } from "@proto-kit/sdk";
 import { Bool, PrivateKey, } from "o1js";
 import { Publisher, Task } from "../../../src/runtime/modules/publish";
 import { StakingRegistry } from "../../../src/runtime/modules/staking";
+import { BalancesWrapper } from "../../../src/runtime/modules/balance";
 import { UInt64, UInt32, Balances, TokenId } from "@proto-kit/library";
-describe("balances", () => {
+describe("Publishing Testing", () => {
   let appChain = TestingAppChain.fromRuntime({
     Publisher,
-    StakingRegistry
+    StakingRegistry,
+    BalancesWrapper
   })
   const alicePrivateKey = PrivateKey.random();
   const alice = alicePrivateKey.toPublicKey();
@@ -25,6 +27,7 @@ describe("balances", () => {
   let publisher: Publisher
   let stakingRegistry: StakingRegistry
   let balances: Balances<unknown>
+  let balanceWrapper: BalancesWrapper
 
 
   const clientsPrivateKeys = [PrivateKey.random(), PrivateKey.random(), PrivateKey.random()]
@@ -47,7 +50,8 @@ describe("balances", () => {
   beforeAll(async () => {
     appChain = TestingAppChain.fromRuntime({
       Publisher,
-      StakingRegistry
+      StakingRegistry,
+      BalancesWrapper
     });
     appChain.configurePartial({
       Runtime: {
@@ -58,6 +62,9 @@ describe("balances", () => {
         StakingRegistry: {
           slashTreasury: slashingTreasury,
           admin: adminPublicKey
+        },
+        BalancesWrapper: {
+          totalSupply: UInt64.from(1_000_000_000)
         }
       },
     });
@@ -66,14 +73,20 @@ describe("balances", () => {
     publisher = appChain.runtime.resolve("Publisher")
     stakingRegistry = appChain.runtime.resolve("StakingRegistry")
     balances = appChain.runtime.resolve("Balances")
+    balanceWrapper = appChain.runtime.resolve("BalancesWrapper")
+    const publicKeys = [alice, publisherPublicKey, ...clients]
+    publicKeys.forEach(async (key) => {
+      const tx = await appChain.transaction(alice, async () =>
+        await balanceWrapper.addBalance(key, UInt64.from(1_000_000))
+      )
+      tx.sign()
+      tx.send()
+    })
+    const block = await appChain.produceBlock();
+    block?.transactions.forEach((tx) => {
+      expect(tx.status.toBoolean()).toBe(true)
+    })
 
-    balances.mint(TokenId.from(0), alice, UInt64.from(1_000_000))
-    balances.mint(TokenId.from(0), publisherPublicKey, UInt64.from(1_000_000))
-    balances.mint(TokenId.from(0), slashingTreasury, UInt64.from(1_000_000))
-    balances.mint(TokenId.from(0), adminPublicKey, UInt64.from(1_000_000))
-    balances.mint(TokenId.from(0), clients[0], UInt64.from(1_000_000))
-    balances.mint(TokenId.from(0), clients[1], UInt64.from(1_000_000))
-    balances.mint(TokenId.from(0), clients[2], UInt64.from(1_000_000))
   }, 1_000_000)
 
 
@@ -98,8 +111,8 @@ describe("balances", () => {
     expect(queriedTask).toStrictEqual(task);
 
     //check balances
-    const aliceBalance = await balances.getBalance(TokenId.from(0), alice);
-    const publisherBalance = await balances.getBalance(TokenId.from(0), publisherPublicKey);
+    const aliceBalance = await balanceWrapper.getBalanceRuntime(alice);
+    const publisherBalance = await balanceWrapper.getBalanceRuntime(publisherPublicKey);
     expect(aliceBalance).toBe(UInt64.from(999_997));
     expect(publisherBalance).toBe(UInt64.from(1_000_003));
   }, 1_000_000);
@@ -131,8 +144,7 @@ describe("balances", () => {
     })
 
     for (let i = 0; i < clients.length; i++) {
-      const balance = await balances.getBalance(
-        TokenId.from(0),
+      const balance = await balanceWrapper.getBalanceRuntime(
         clients[i]
       )
       expect(balance).toBe(UInt64.from(999_999))
@@ -151,7 +163,7 @@ describe("balances", () => {
     const task = await appChain.query.runtime.Publisher.tasks.get(UInt64.from(0))
     expect(task?.completed.toBoolean()).toBe(true)
     for (let i = 0; i < clients.length; i++) {
-      const balance = await balances.getBalance(TokenId.from(0), clients[i])
+      const balance = await balanceWrapper.getBalanceRuntime(clients[i])
       expect(balance).toBe(UInt64.from(1_000_000))
     }
   }, 1_000_000)
