@@ -58,7 +58,7 @@ interface PublisherConfig {
   address: PublicKey;
 }
 export class ClientValue extends Struct({
-  value: Provable.Array(PublicKey, 3),
+  value: Provable.Array(PublicKey, 2),
 }) { }
 
 @runtimeModule()

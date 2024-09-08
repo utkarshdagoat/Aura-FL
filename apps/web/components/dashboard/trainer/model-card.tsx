@@ -3,14 +3,39 @@ import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import axios from "axios";
+import { ADD_CLIENT } from "@/lib/backend";
+import { useWalletStore } from "@/lib/stores/wallet";
+import { useToast } from "@/components/ui/use-toast";
+import { trainAndGenerateProof } from "@/lib/trainModel";
+import { useVerify } from "@/lib/stores/aggregate";
 
 export default function TrainerModelCard(props: TrainerModel) {
-  const handleAccept = () => {
-    //TODO: Add model action
+  const wallet = useWalletStore()
+  const { toast } = useToast()
+  const handleAccept = async () => {
+    if (props.offChainId && wallet.wallet) {
+      const addClient = await axios.post(ADD_CLIENT(props.offChainId), {
+        address: wallet.wallet
+      })
+      const res = addClient.data
+      toast({
+        title: "Task Accepted",
+        description: "You have successfully accepted the task",
+      })
+      console.log(res)
+    }
+
   };
 
   const handleVerify = () => {
 
+  }
+  const verify = useVerify()
+  const handleTrain = async () => {
+    if (wallet.wallet && props.offChainId) {
+    const proof = await trainAndGenerateProof(wallet.wallet, props.offChainId)
+    verify(proof, props.id)}
   }
 
   const handlePush = () => {
@@ -59,10 +84,22 @@ export default function TrainerModelCard(props: TrainerModel) {
             <Button
               className=" absolute right-1 rounded-full border "
               onClick={handleAccept}
+              disabled={props.offChainId ? false : true}
             >
               Accept
             </Button>
           )}
+          {props.status === "Training" && (
+            <Button
+              className=" absolute right-1 rounded-full border "
+              onClick={handleTrain}
+              disabled={props.offChainId ? false : true}
+              variant={"outline"}
+            >
+              Train
+            </Button>
+          )
+          }
           {props.status === "Completed" && (
             <div className="absolute right-1 flex flex-row items-center gap-4">
               <Button

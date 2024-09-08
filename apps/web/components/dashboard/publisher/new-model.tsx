@@ -55,6 +55,7 @@ export default function NewModel() {
     field: K,
     value: FormState[K],
   ) => {
+    console.log("Field", field, "Value", value);
     setFormState((prevState) => ({
       ...prevState,
       [field]: value,
@@ -78,6 +79,7 @@ export default function NewModel() {
         activationFunction: ActivationEnumToNumber[formState.activationFunction],
         Optimizer: OptimizerToNumber[formState.optimizer],
         feePerEpoch: formState.feePerEpoch,
+        name:formState.name
       });
   };
 
@@ -153,7 +155,7 @@ export default function NewModel() {
             <Input
               type="number"
               placeholder="No. of epochs"
-              onChange={(e) => handleChange("layers", parseInt(e.target.value))}
+              onChange={(e) => handleChange("epochs", parseInt(e.target.value))}
               defaultValue={formState.epochs || ""}
             />
           </div>

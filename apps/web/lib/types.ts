@@ -65,8 +65,9 @@ export const NumberToOptimizerEnum: {
 type OptimizerTypeUnion = `${OptimizerTypeEnum}`;
 
 export type PublishedModel = {
-  id?: number;
+  id: number;
   name: string;
+  offChainId?: number;
   type: ModelTypeUnion;
   activationFunction: ActivationFunctionTypeUnion;
   optimizer: OptimizerTypeUnion;

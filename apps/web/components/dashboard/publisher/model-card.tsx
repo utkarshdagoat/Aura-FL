@@ -1,12 +1,33 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { AGGREGATE } from "@/lib/backend";
+import { useCompleteTask } from "@/lib/stores/publisher";
 import { PublishedModel } from "@/lib/types";
+import axios from "axios";
 import { ArrowRight } from "lucide-react";
 
 export default function PublishedModelCard(props: PublishedModel) {
-  const handleAction = () => {
-    //TODO: Add model action
+  const completeTask = useCompleteTask()
+  const handleAction =async () => {
+    if(!props.offChainId) return
+    const aggregateRespionse =await axios.get(AGGREGATE(props.offChainId),{
+      withCredentials:true
+    })
+    await completeTask(props.id)
+  
+
+    const blob = new Blob([JSON.stringify(aggregateRespionse.data)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'params.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+
   };
   return (
     <div className="w-full rounded-md border p-4">
@@ -50,7 +71,7 @@ export default function PublishedModelCard(props: PublishedModel) {
             variant={"outline"}
             onClick={handleAction}
           >
-            Action Button
+            Mark Complete
           </Button>
         </div>
       </div>

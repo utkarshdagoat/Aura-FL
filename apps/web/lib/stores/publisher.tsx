@@ -10,7 +10,10 @@ import { useChainStore } from "./chain";
 import { useWalletStore } from "./wallet";
 import { client } from "chain";
 import { EnumToNumberMap, ModelTypeFromNumber, NumberTOActivationEnum, NumberToOptimizerEnum, PublishedModel } from "../types";
-
+import axios from "axios"
+import { CREATE_TASK, GETALLTASKS, GETCLIENTS } from "../backend";
+import { stat } from "fs";
+import { ClientTaskKey } from "chain/dist/runtime/modules/aggregator";
 
 
 
@@ -19,11 +22,11 @@ export interface PublisherState {
     taskLength: number;
     tasks: PublishedModel[],
     clients: {
-        [key: number]: PublicKey[]
+        [key: number]: string[]
     },
     addTask: (params: addTaskParams) => Promise<PendingTransaction>,
     completeTask: (taskId: number, client: Client, address: string) => Promise<PendingTransaction>,
-    loadTasks: () => void,
+    loadTasks: (wallet: string, client: Client) => void,
     addClients: (taskId: number, clientOne: PublicKey, clientTwo: PublicKey, clientThree: PublicKey, client: Client, address: string) => Promise<PendingTransaction>,
 }
 
@@ -44,6 +47,7 @@ interface addTaskParams {
     feePerEpoch: number;
     client: Client;
     signer: string;
+    name:string;
 }
 
 export const tokenId = TokenId.from(0);
@@ -57,36 +61,62 @@ export const usePublisherStore = create<
         taskLength: 0,
         tasks: [],
         clients: {},
-        loadTasks: async () => {
+        loadTasks: async (wallet: string, client: Client) => {
             set((state) => {
                 state.loading = true;
             })
             const taskLength = await client.query.runtime.Publisher.TASKS_LENGTH.get();
+            const offChainTasks = await axios.get(GETALLTASKS)
+            console.log(offChainTasks.data)
+            if (taskLength === undefined) {
+                const publisher = client.runtime.resolve("Publisher");
+                const tx = await client.transaction(PublicKey.fromBase58(wallet), async () => {
+                    await publisher.intitialize();
+                })
+                await tx.sign()
+                await tx.send()
+                isPendingTransaction(tx.transaction)
+                return false;
+            }
             const upperBound = taskLength ? Number(taskLength.toBigInt()) : 3;
             const tasks: PublishedModel[] = []
-            for (let i = 0; i < upperBound; i++) {
+           
+            for (let i = 0; i <= upperBound; i++) {
                 const task = await client.query.runtime.Publisher.tasks.get(UInt64.from(i));
-                if (task)
+                if (task){
+                    const offChainTask = offChainTasks.data.data.find((task:any)=>task.onChainId===i)
+                    console.log(offChainTask)
                     tasks.push({
                         id: i,
-                        name: "Task",
+                        name: offChainTask?  offChainTask.title : "Task",
                         type: ModelTypeFromNumber[task.modelType.toString()],
                         layers: Number(task.numOfLayers.toBigInt()),
                         feePerEpoch: Number(task.feePerEpoch.toBigInt()),
                         epochs: Number(task.epochs.toBigInt()),
                         activationFunction: NumberTOActivationEnum[task.activationFunction.toString()],
                         optimizer: NumberToOptimizerEnum[task.Optimizer.toString()],
-                        status: task.completed.toBoolean() ? "Completed" : "Training"
+                        status:"Training",
+                        offChainId: offChainTask? offChainTask.id : undefined
                     });
+                    if(offChainTask){
+                        const clientsData =await axios.get(GETCLIENTS(Number(offChainTask.id)))
+                        const clientsDataClean = clientsData.data.data.map((client:any)=>(client.address))
+                        set((state)=>{
+                            state.clients[i] = clientsDataClean
+                        })
+                    }
+                }
             }
             set((state) => {
                 state.tasks = tasks;
+                state.taskLength = Number(taskLength.toString())
                 state.loading = false;
             })
         },
         addTask: async (params: addTaskParams) => {
             const publisher = params.client.runtime.resolve("Publisher")
             const sender = PublicKey.fromBase58(params.signer)
+            const taskLength = await client.query.runtime.Publisher.TASKS_LENGTH.get();
             const tx = await params.client.transaction(sender, async () => {
                 await publisher.addTask(
                     UInt64.from(params.epochs),
@@ -101,6 +131,16 @@ export const usePublisherStore = create<
             await tx.sign()
             await tx.send()
             isPendingTransaction(tx.transaction)
+            const res =  await axios.post(CREATE_TASK,{
+                onChainId:Number(taskLength?.toString()),
+                name:params.name
+            },{
+                headers:{
+                    "Content-Type":"application/json"
+                },
+                withCredentials:true
+            })
+            console.log(res)
             return tx.transaction;
         },
         completeTask: async (taskId: number, client: Client, address: string) => {
@@ -143,10 +183,12 @@ export const usePublisherStore = create<
 export const useObserverTasks = () => {
     const chain = useChainStore()
     const publisher = usePublisherStore()
-
+    const client = useClientStore()
+    const wallet = useWalletStore()
     useEffect(() => {
-        publisher.loadTasks()
-    }, [chain.block?.height])
+        if (wallet.wallet && client.client)
+            publisher.loadTasks(wallet.wallet, client.client)
+    }, [chain.block?.txs, client.client, wallet.wallet])
 }
 
 
@@ -158,38 +200,39 @@ interface useAddTasksParams {
     activationFunction: number;
     Optimizer: number;
     feePerEpoch: number;
+    name:string
 }
 export const useAddTasks = () => {
     const client = useClientStore();
     const wallet = useWalletStore();
     const publisher = usePublisherStore()
-    return useCallback(async (params:useAddTasksParams) => {
+    return useCallback(async (params: useAddTasksParams) => {
         if (!client.client || !wallet.wallet) return;
         console.log("faucet")
         const pendingTransaction = await publisher.addTask({
             ...params,
-            client:client.client,
-            signer:wallet.wallet
+            client: client.client,
+            signer: wallet.wallet
         })
         wallet.addPendingTransaction(pendingTransaction);
     }, [client.client, wallet.wallet]);
 }
-export const useCompleteTask = (taskId:number,) => {
+export const useCompleteTask = () => {
     const client = useClientStore();
     const wallet = useWalletStore();
     const publisher = usePublisherStore()
-    return useCallback(async () => {
+    return useCallback(async (taskId: number) => {
         if (!client.client || !wallet.wallet) return;
         console.log("faucet")
         const pendingTransaction = await publisher.completeTask(
             taskId,
             client.client,
             wallet.wallet
-        )           
+        )
         wallet.addPendingTransaction(pendingTransaction);
     }, [client.client, wallet.wallet]);
 }
-export const useAddClients = (taskId:number,clientOne:string,clientTwo:string,clientThree:string) =>{
+export const useAddClients = (taskId: number, clientOne: string, clientTwo: string, clientThree: string) => {
     const client = useClientStore();
     const wallet = useWalletStore();
     const publisher = usePublisherStore()
@@ -203,7 +246,7 @@ export const useAddClients = (taskId:number,clientOne:string,clientTwo:string,cl
             PublicKey.fromBase58(clientThree),
             client.client,
             wallet.wallet
-        )           
+        )
         wallet.addPendingTransaction(pendingTransaction);
     }, [client.client, wallet.wallet]);
 }

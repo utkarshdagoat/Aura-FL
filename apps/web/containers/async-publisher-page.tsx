@@ -4,24 +4,28 @@ import { FilterModels, NewModel } from "@/components/dashboard/publisher";
 import PublishedModelCard from "@/components/dashboard/publisher/model-card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { sampleModelData } from "@/lib/data/sample-model-data";
+import { useClientStore } from "@/lib/stores/client";
 import { useObserverTasks, usePublisherStore } from "@/lib/stores/publisher";
+import { useWalletStore } from "@/lib/stores/wallet";
 import { FilterModesUnion, PublishedModel } from "@/lib/types";
 import { useEffect, useState } from "react";
 
 export default function PublisherDashboard() {
-  const [modelData, setModelData] = useState<PublishedModel[]>([]);
   const [filteredModelData, setFilteredModelData] = useState<PublishedModel[]>([]);
   const [filter, setFilter] = useState<FilterModesUnion>("All");
-  const [isLoading, setLoading] = useState(false);
   const publisher = usePublisherStore()
+  const [isLoading, setLoading] = useState(publisher.loading);
+  const [modelData, setModelData] = useState<PublishedModel[]>([]);
+  const client = useClientStore()
+  const wallet = useWalletStore()
   useEffect(() => {
-    setLoading(true);
-    setTimeout(() => {
-      setModelData(publisher.tasks);
-      setLoading(false);
-    }, 1000);
-  }, []);
-
+    if (wallet.wallet && client.client)
+      publisher.loadTasks(wallet.wallet, client.client)
+    console.log(publisher.tasks)
+  }, [])
+  useEffect(()=>{
+    setModelData(publisher.tasks)
+  },[publisher.tasks])
   // Filter functionality
   useEffect(() => {
     if (filter === "All") {

@@ -6,7 +6,7 @@
     "lint": "turbo run lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "test": "turbo run test --no-cache",
-    "prisma:migrate": "turbo run prisma:migrate --env-mode=loose",
+    "prisma:migrate": "turbo run prisma:migrate --force --env-mode=loose",
     "prisma:generate": "turbo run prisma:generate",
     "start": "turbo run start --env-mode=loose",
     "docker:build": "docker compose -f docker/docker-compose.yml build",

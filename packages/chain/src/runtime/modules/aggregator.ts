@@ -10,7 +10,11 @@ interface AggregatorConfig { }
 export class ClientTaskKey extends Struct({
     taskId: UInt64,
     clientId: PublicKey
-}) { }
+}) { 
+    static from(taskId:UInt64,client:PublicKey):ClientTaskKey{
+        return new ClientTaskKey({taskId,clientId:client})
+    }
+}
 
 export class Aggregator extends RuntimeModule<AggregatorConfig> {
     @state() public clientsProofVerified = StateMap.from<ClientTaskKey, Bool>(ClientTaskKey, Bool);

@@ -8,19 +8,13 @@ import {
 } from "@/components/dashboard/trainer";
 import { useDashboardStore } from "@/lib/stores/dashboard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useStakingStore } from "@/lib/stores/staking";
 
 export default function TrainerDashboard() {
-  const { hasTrainerStaked } = useDashboardStore();
-
+  const staking = useStakingStore()
   return (
     <>
-      <div className="space-y-2">
-        <h1 className="text-4xl">Have some spare computing power?</h1>
-        <p className="text-lg text-muted-foreground">
-          Train models and earn MINA while you're at it. 🚀
-        </p>
-      </div>
-      {!hasTrainerStaked ? (
+      {!staking.hasStaked? (
         <StakeAlert />
       ) : (
         <div>
@@ -43,22 +37,12 @@ export default function TrainerDashboard() {
               >
                 Training
               </TabsTrigger>
-              <TabsTrigger
-                value="Completed"
-                className="text-base"
-                variant={"outline"}
-              >
-                Completed
-              </TabsTrigger>
             </TabsList>
             <TabsContent value="Available">
               <AvailableModels />
             </TabsContent>
             <TabsContent value="Training">
               <TrainingModels />
-            </TabsContent>
-            <TabsContent value="Completed">
-              <CompletedModels />
             </TabsContent>
           </Tabs>
         </div>

@@ -26,7 +26,7 @@ function isPendingTransaction(
 }
 
 
-export const useBalancesStore = create<
+export const useStakingStore = create<
     StakingState,
     [["zustand/immer", never]]
 >(
@@ -72,8 +72,8 @@ export const useBalancesStore = create<
             const isSlashed = await client.query.runtime.StakingRegistry.isSlashed.get(PublicKey.fromBase58(address));
             set((state) => {
                 state.loading = false;
-                state.hasStaked = hasStaked.value;
-                state.isSlashed = isSlashed.value;
+                state.hasStaked = hasStaked ? hasStaked.toBoolean() : false;
+                state.isSlashed = isSlashed ? isSlashed.toBoolean() : false;
             });
         },
 
@@ -84,7 +84,7 @@ export const useBalancesStore = create<
 export const useStakingStatusObserver = () => {
     const client = useClientStore();
     const wallet = useWalletStore();
-    const staking = useBalancesStore();
+    const staking = useStakingStore();
     const chain = useChainStore()
 
     useEffect(() => {
@@ -96,7 +96,7 @@ export const useStakingStatusObserver = () => {
 
 export const useStake = () => {
     const client = useClientStore();
-    const staking = useBalancesStore();
+    const staking = useStakingStore();
     const wallet = useWalletStore();
 
     return async (amount: number) => {
@@ -110,7 +110,7 @@ export const useStake = () => {
 
 export const useUnStake = () => {
     const client = useClientStore();
-    const staking = useBalancesStore();
+    const staking = useStakingStore();
     const wallet = useWalletStore();
 
     return async () => {

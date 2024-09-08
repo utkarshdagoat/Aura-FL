@@ -26,7 +26,7 @@ export class TaskService {
         return res;
     }
 
-    public async addWeightsAndBiasToClient(taskId: number, weights: bigint[], bias: bigint[], client: string) {
+    public async addWeightsAndBiasToClient(taskId: number, weights: number[], bias: number[], client: string) {
         const res = await this.client.update({
             where: {
                 address_taskId: {
@@ -42,7 +42,7 @@ export class TaskService {
         return res;
     }
 
-    public async getWeightsAndBiasForATask(taskId: number) : Promise<bigint[][][]> {
+    public async getWeightsAndBiasForATask(taskId: number) : Promise<number[][][]> {
         const res = await this.client.findMany({
             where: {
                 taskId: taskId
@@ -59,6 +59,15 @@ export class TaskService {
 
     public async getAllTasks() {
         const res = await this.task.findMany();
+        return res;
+    }
+    
+    public async getClientsForTask(taskId: number) {
+        const res = await this.client.findMany({
+            where: {
+                taskId: taskId
+            }
+        });
         return res;
     }
 }

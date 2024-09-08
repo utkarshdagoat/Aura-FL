@@ -16,8 +16,8 @@ model Task {
 
 model Client {
   address String  
-  weight BigInt[]  @default([])
-  bias   BigInt[] @default([])
+  weight Int[]  @default([])
+  bias   Int[] @default([])
   task    Task     @relation(fields: [taskId], references: [id])
   taskId  Int
   @@id([address,taskId])

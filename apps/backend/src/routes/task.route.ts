@@ -4,7 +4,7 @@ import { ValidationMiddleware } from '@/middleware/validation.middleware';
 import { ClientDataDTO, CreateTaskDTO } from '@/dtos/task.dto';
 import { Routes } from '@/interfaces/route.interface';
 export class TaskRoutes implements Routes {
-    public path = '/api/';
+    public path = '/api';
     public router = Router();
     public task = new TaskController();
 
@@ -19,5 +19,6 @@ export class TaskRoutes implements Routes {
         this.router.post(`${this.path}/task/:id/client/:client`, this.task.addWeightsAndBiasToClient)
         this.router.get(`${this.path}/task/:id/aggregate`, this.task.aggregateWeightsAndBias)
         this.router.get(`${this.path}/tasks`, this.task.getTasks)
+        this.router.get(`${this.path}/task/:id/clients`, this.task.getClientsForTask)
     }
 }
