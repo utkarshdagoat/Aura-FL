@@ -35,7 +35,7 @@
 //         );
 
 //     const b = Array(nFilters).fill(Field(0));
-//     const convOutput = conv2D(x, W, b, kernelSize, strides);
+//     const convOutput =await conv2D(x, W, b, Field.from(kernelSize), Field.from(strides));
 //     const activations = Array(convLayerOutputRows)
 //         .fill(null)
 //         .map(() =>

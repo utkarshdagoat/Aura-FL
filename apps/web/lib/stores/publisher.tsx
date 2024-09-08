@@ -95,7 +95,7 @@ export const usePublisherStore = create<
                         epochs: Number(task.epochs.toBigInt()),
                         activationFunction: NumberTOActivationEnum[task.activationFunction.toString()],
                         optimizer: NumberToOptimizerEnum[task.Optimizer.toString()],
-                        status:"Training",
+                        status:task.completed.toBoolean() ? "Completed":"Training",
                         offChainId: offChainTask? offChainTask.id : undefined
                     });
                     if(offChainTask){
@@ -108,7 +108,7 @@ export const usePublisherStore = create<
                 }
             }
             set((state) => {
-                state.tasks = tasks;
+                state.tasks = tasks.reverse();
                 state.taskLength = Number(taskLength.toString())
                 state.loading = false;
             })

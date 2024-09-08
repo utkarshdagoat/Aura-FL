@@ -1,8 +1,112 @@
-# Protokit starter-kit
+<!-- Improved compatibility of back to top link: See: https://github.com/othneildrew/Best-README-Template/pull/73 -->
+<a id="readme-top"></a>
+<!--
+*** Thanks for checking out the Best-README-Template. If you have a suggestion
+*** that would make this better, please fork the repo and create a pull request
+*** or simply open an issue with the tag "enhancement".
+*** Don't forget to give the project a star!
+*** Thanks again! Now go create something AMAZING! :D
+-->
 
-This repository is a monorepo aimed at kickstarting application chain development using the Protokit framework.
 
-## Quick start
+
+<!-- PROJECT SHIELDS -->
+<!--
+*** I'm using markdown "reference style" links for readability.
+*** Reference links are enclosed in brackets [ ] instead of parentheses ( ).
+*** See the bottom of this document for the declaration of the reference variables
+*** for contributors-url, forks-url, etc. This is an optional, concise syntax you may use.
+*** https://www.markdownguide.org/basic-syntax/#reference-style-links
+-->
+[![Contributors][contributors-shield]][contributors-url]
+[![Forks][forks-shield]][forks-url]
+[![Stargazers][stars-shield]][stars-url]
+[![Issues][issues-shield]][issues-url]
+[![MIT License][license-shield]][license-url]
+[![LinkedIn][linkedin-shield]][linkedin-url]
+
+
+
+<!-- PROJECT LOGO -->
+<br />
+<div align="center">
+  <a href="https://github.com/utkarshdagoat/Aura-Fl">
+    <img src="images/logo.png" alt="Logo" width="80" height="80">
+  </a>
+
+<h3 align="center">Aura Fl</h3>
+
+  <p align="center">
+    AURA-fl is the first practical and safe federated learning platform, revolutionizing data privacy and fairness with zero-knowledge proofs and verified model integrity
+    <br />
+    <a href="https://github.com/utkarshdagoat/Aura-Fl"><strong>Explore the docs »</strong></a>
+    <br />
+    <br />
+    <a href="https://github.com/utkarshdagoat/Aura-Fl">View Demo</a>
+    ·
+    <a href="https://github.com/utkarshdagoat/Aura-Fl/issues/new?labels=bug&template=bug-report---.md">Report Bug</a>
+    ·
+    <a href="https://github.com/utkarshdagoat/Aura-Fl/issues/new?labels=enhancement&template=feature-request---.md">Request Feature</a>
+  </p>
+</div>
+
+
+
+<!-- TABLE OF CONTENTS -->
+<details>
+  <summary>Table of Contents</summary>
+  <ol>
+    <li>
+      <a href="#about-the-project">About The Project</a>
+      <ul>
+        <li><a href="#built-with">Built With</a></li>
+      </ul>
+    </li>
+    <li>
+      <a href="#getting-started">Getting Started</a>
+      <ul>
+        <li><a href="#prerequisites">Prerequisites</a></li>
+        <li><a href="#installation">Installation</a></li>
+      </ul>
+    </li>
+    <li><a href="#usage">Usage</a></li>
+    <li><a href="#roadmap">Roadmap</a></li>
+    <li><a href="#contributing">Contributing</a></li>
+    <li><a href="#license">License</a></li>
+    <li><a href="#contact">Contact</a></li>
+    <li><a href="#acknowledgments">Acknowledgments</a></li>
+  </ol>
+</details>
+
+
+
+![Product Name Screen Shot][product-screenshot]
+## About The Project
+AURA-fl is a pioneering federated learning platform built on the Protokit starter framework and Mina blockchain. It utilizes O1js for developing zero-knowledge circuits and implements the provable code model to verify the krum function and model inference via zk-SNARKs. By integrating these technologies, AURA-fl ensures secure, transparent, and reliable federated learning, setting a new standard for privacy and integrity in distributed AI training.
+## Architecture
+![Product Name Screen Shot][architecture]
+
+**The architecture of AURA-fl uses a decentralized workflow to secure the integrity and security of federated learning tasks.** A publisher runtime manages and distributes jobs to clients, using a task queue system to dynamically assign work. When a client accepts a task, it executes it locally with **TensorFlow.js**, allowing for on-device training without revealing raw data. The model parameters created during local training are subsequently transferred to an **aggregator server** and used to create a global model. Concurrently, a **proof of inference** is constructed locally using **recursive zk-SNARKs**, verifying that the computations executed are consistent with expected model behavior while preserving private data.
+
+**These zero-knowledge proofs are presented on-chain to an aggregator runtime, which checks their accuracy and ensures that model changes adhere to safe training rules.** To ensure the integrity of participating clients, a **staking registry** is developed, forcing them to stake tokens as collateral. This registry communicates with the aggregator runtime; if a publisher publishes a valid **krum proof** on-chain, showing that a client's supplied update is fraudulent or incorrect, the implicated client's stake is automatically reduced. This technique promotes responsibility while discouraging hostile conduct, resulting in a secure and trustworthy federated learning environment.
+<details>
+  <summary><h2>Implementation</h2></summary>
+    <details>
+    <summary>Runtime Modules</summary>
+    </details>
+    <details>
+    <summary>ZK Program</summary>
+    </details>
+</details>
+
+
+<!-- GETTING STARTED -->
+## Getting Started
+
+This is an example of how you may give instructions on setting up your project locally.
+To get a local copy up and running follow these simple example steps.
+
+
 
 The monorepo contains 1 package and 1 app:
 
@@ -93,51 +197,87 @@ pnpm env:development dev --filter=chain
 pnpm env:development dev --filter web
 ```
 
-### Deploying to a server
 
-When deploying to a server, you should push your code along with your forked starter-kit to some repository, 
-then clone it on your remote server and execute it.
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-```zsh
-# start every component with docker
-pnpm env:sovereign docker:up -d
-```
 
-UI will be accessible at `https://localhost` and GQL inspector will be available at `https://localhost/graphql`
 
-#### Configuration
+<!-- USAGE EXAMPLES -->
+## Usage
 
-Go to `docker/proxy/Caddyfile` and replace the `*` matcher with your domain.
-```
-yourdomain.com {
-    ...
-}
-```
 
-> HTTPS is handled automatically by Caddy, you can (learn more about automatic https here.)[https://caddyserver.com/docs/automatic-https]
 
-In most cases, you will need to change the `NEXT_PUBLIC_PROTOKIT_GRAPHQL_URL` property in the `.env` file to the domain your graphql endpoint is running in.
-By default, the graphql endpoint is running on the same domain as your UI with the `/graphql` suffix.
+<!-- ROADMAP -->
+## Roadmap
 
-#### Running sovereign chain locally
+- [ ] Feature 1
+- [ ] Feature 2
 
-The caddy reverse-proxy automatically uses https for all connections, use this guide to remove certificate errors when accessing localhost sites
 
-<https://caddyserver.com/docs/running#local-https-with-docker>
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-## CLI Options
 
-- `logLevel`: Overrides the loglevel used. Also configurable via the `PROTOKIT_LOG_LEVEL` environment variable.
-- `pruneOnStartup`: If set, prunes the database before startup, so that your chain is starting from a clean, genesis state. Alias for environment variable `PROTOKIT_PRUNE_ON_STARTUP`
 
-In order to pass in those CLI option, add it at the end of your command like this
+<!-- CONTRIBUTING -->
+## Contributing
 
-`pnpm env:inmemory dev --filter chain -- --logLevel DEBUG --pruneOnStartup`
+Contributions are what make the open source community such an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
 
-### Building the framework from source
+If you have a suggestion that would make this better, please fork the repo and create a pull request. You can also simply open an issue with the tag "enhancement".
+Don't forget to give the project a star! Thanks again!
 
-1. Make sure the framework is located under ../framework from the starter-kit's location
-2. Adapt your starter-kit's package.json to use the file:// references to framework
-3. Go into the framework folder, and build a docker image containing the sources with `docker build -f ./packages/deployment/docker/development-base/Dockerfile -t protokit-base .`
+1. Fork the Project
+2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the Branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
-4. Comment out the first line of docker/base/Dockerfile to use protokit-base
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+### Top contributors:
+
+<a href="https://github.com/utkarshdagoat/Aura-Fl/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=utkarshdagoat/Aura-Fl" alt="contrib.rocks image" />
+</a>
+
+
+
+<!-- LICENSE -->
+## License
+
+Distributed under the MIT License. See `LICENSE.txt` for more information.
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+
+
+
+
+
+<!-- ACKNOWLEDGMENTS -->
+## Acknowledgments
+
+* []()
+* []()
+* []()
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+
+
+<!-- MARKDOWN LINKS & IMAGES -->
+<!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
+[contributors-shield]: https://img.shields.io/github/contributors/utkarshdagoat/Aura-Fl.svg?style=for-the-badge
+[contributors-url]: https://github.com/utkarshdagoat/Aura-Fl/graphs/contributors
+[forks-shield]: https://img.shields.io/github/forks/utkarshdagoat/Aura-Fl.svg?style=for-the-badge
+[forks-url]: https://github.com/utkarshdagoat/Aura-Fl/network/members
+[stars-shield]: https://img.shields.io/github/stars/utkarshdagoat/Aura-Fl.svg?style=for-the-badge
+[stars-url]: https://github.com/utkarshdagoat/Aura-Fl/stargazers
+[issues-shield]: https://img.shields.io/github/issues/utkarshdagoat/Aura-Fl.svg?style=for-the-badge
+[issues-url]: https://github.com/utkarshdagoat/Aura-Fl/issues
+[license-shield]: https://img.shields.io/github/license/utkarshdagoat/Aura-Fl.svg?style=for-the-badge
+[license-url]: https://github.com/utkarshdagoat/Aura-Fl/blob/master/LICENSE.txt
+[linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?style=for-the-badge&logo=linkedin&colorB=555
+[linkedin-url]: https://linkedin.com/in/linkedin_username
+[product-screenshot]: images/screenshot.png
+[architecture]: images/architecture.png
