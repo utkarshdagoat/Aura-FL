@@ -17,5 +17,7 @@ export class TaskRoutes implements Routes {
         this.router.post(`${this.path}/task`, ValidationMiddleware(CreateTaskDTO), this.task.createTask);
         this.router.post(`${this.path}/task/:id/client`, ValidationMiddleware(ClientDataDTO), this.task.addClientToTask);
         this.router.post(`${this.path}/task/:id/client/:client`, this.task.addWeightsAndBiasToClient)
+        this.router.get(`${this.path}/task/:id/aggregate`, this.task.aggregateWeightsAndBias)
+        this.router.get(`${this.path}/tasks`, this.task.getTasks)
     }
 }

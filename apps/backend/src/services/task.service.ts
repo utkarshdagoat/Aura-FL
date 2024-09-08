@@ -56,4 +56,9 @@ export class TaskService {
         })
         return [weights, bias]
     }
+
+    public async getAllTasks() {
+        const res = await this.task.findMany();
+        return res;
+    }
 }
