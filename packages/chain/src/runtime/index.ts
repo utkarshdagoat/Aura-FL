@@ -1,8 +1,9 @@
-import { Balance, VanillaRuntimeModules,Balances } from "@proto-kit/library";
+import { Balance, VanillaRuntimeModules } from "@proto-kit/library";
 import { ModulesConfig } from "@proto-kit/common";
 import { Publisher } from "./modules/publish";
 import { StakingRegistry } from "./modules/staking";
 import { Aggregator } from "./modules/aggregator";
+import { Balances } from "./modules/balance";
 import { PrivateKey } from "o1js";
 
 

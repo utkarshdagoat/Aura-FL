@@ -4,7 +4,7 @@ import { inject } from "tsyringe";
 import { UInt64 } from "@proto-kit/library";
 import { StateMap } from "@proto-kit/protocol";
 import { LayerProof } from "../zkPrograms/layer";
-
+import { HeadLayerProof } from "../zkPrograms/headLayer";
 interface AggregatorConfig { }
 
 export class ClientTaskKey extends Struct({
@@ -20,7 +20,7 @@ export class Aggregator extends RuntimeModule<AggregatorConfig> {
     public async verifyInfrence(
         taskId: UInt64,
         clientId: PublicKey,
-        proof: LayerProof
+        proof:HeadLayerProof 
     ) {
         proof.verify()
         this.clientsProofVerified.set(new ClientTaskKey({ taskId, clientId }), Bool(true))

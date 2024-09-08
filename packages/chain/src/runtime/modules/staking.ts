@@ -19,7 +19,6 @@ export class StakingRegistry extends RuntimeModule<StakingRegistryConfig> {
     @state() public hasStaked = StateMap.from<PublicKey, Bool>(PublicKey, Bool);
     @state() public isSlashed = StateMap.from<PublicKey, Bool>(PublicKey, Bool);
     @state() public slashTreasury = State.from<PublicKey>(PublicKey);
-    @state() public ADMIN = State.from<PublicKey>(PublicKey);
 
     constructor(
         @inject("Balances") public balance: Balances,

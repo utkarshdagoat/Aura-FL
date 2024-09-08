@@ -53,8 +53,6 @@ export class Task extends Struct({
       feePerEpoch,
     });
   }
-
-
 };
 interface PublisherConfig {
   address: PublicKey;
@@ -68,7 +66,6 @@ export class Publisher extends RuntimeModule<PublisherConfig> {
   @state() public TASKS_LENGTH = State.from<UInt64>(UInt64);
   @state() public tasks = StateMap.from<UInt64, Task>(UInt64, Task);
   @state() public clients = StateMap.from<UInt64, ClientValue>(UInt64, ClientValue);
-  @state() public clientsIndex = StateMap.from<UInt64, UInt64>(UInt64, UInt64);
 
   constructor(
     @inject("StakingRegistry") public stakingRegistry: StakingRegistry,
@@ -95,7 +92,7 @@ export class Publisher extends RuntimeModule<PublisherConfig> {
       this.config.address,
       totalFee
     )
-    const tasksLength = await this.TASKS_LENGTH.get();
+    let tasksLength = await this.TASKS_LENGTH.get();
     const task = Task.from(
       epochs,
       modelType,
@@ -112,7 +109,7 @@ export class Publisher extends RuntimeModule<PublisherConfig> {
     const clientsValue =  new ClientValue({ value: clients });
     await this.clients.set(tasksLength.value, clientsValue);
     const incrementTl = tasksLength.value.add(1);
-    this.TASKS_LENGTH.set(incrementTl);
+    await this.TASKS_LENGTH.set(incrementTl);
   }
 
   @runtimeMethod()
@@ -146,8 +143,6 @@ export class Publisher extends RuntimeModule<PublisherConfig> {
   }
 
 
-  ///Wanted to find the empty array index and could not so I all the three clients
-  /// Not scalable :(
   @runtimeMethod()
   public async addClients(
 
@@ -164,6 +159,11 @@ export class Publisher extends RuntimeModule<PublisherConfig> {
   @runtimeMethod()
   public async getTask(taskId: UInt64): Promise<Task> {
     return (await this.tasks.get(taskId)).value;
+  }
+
+  @runtimeMethod()
+  public async intitialize(): Promise<void> {
+    await this.TASKS_LENGTH.set(UInt64.from(0));
   }
 
 }

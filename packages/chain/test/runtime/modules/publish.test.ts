@@ -71,6 +71,7 @@ describe("Publishing Testing", () => {
     publisher = appChain.runtime.resolve("Publisher")
     stakingRegistry = appChain.runtime.resolve("StakingRegistry")
     balance = appChain.runtime.resolve("Balances")
+
   }, 1_000_000)
 
   it("Should increase balance", async () => {
@@ -91,8 +92,15 @@ describe("Publishing Testing", () => {
 
 
   it("add task", async () => {
-
-
+    const tx = await appChain.transaction(alice, async () => {
+      await publisher.intitialize()
+    })
+    await tx.sign()
+    await tx.send()
+    const block1 = await appChain.produceBlock();
+    expect(block1?.transactions[0].status.toBoolean()).toBe(true)
+    const taskLength1 = await appChain.query.runtime.Publisher.TASKS_LENGTH.get()
+    expect(taskLength1?.toString()).toBe("0")
     const tx1 = await appChain.transaction(alice, async () => {
       await publisher.addTask(
         UInt64.from(3),
@@ -120,6 +128,8 @@ describe("Publishing Testing", () => {
     })
     const publisherBalance = await appChain.query.runtime.Balances.balances.get(publisherBalanceKey)
     const aliceBalance = await appChain.query.runtime.Balances.balances.get(aliceBalanceKey)
+    const taskLength = await appChain.query.runtime.Publisher.TASKS_LENGTH.get()
+    expect(taskLength?.toString()).toBe("1")
     expect(publisherBalance?.toBigInt()).toBe(3n)
     expect(aliceBalance?.toBigInt()).toBe(999997n)
 
@@ -205,7 +215,7 @@ describe("Publishing Testing", () => {
       expect(tx.status.toBoolean()).toBe(true)
     })
     const clientsForTask = await appChain.query.runtime.Publisher.clients.get(UInt64.from(0))
-    expect(clientsForTask?.length).toBe(3)
+    expect(clientsForTask?.value.length).toBe(3)
   }, 1_000_000)
 
   it("should complete task and distribute funds", async () => {
@@ -219,7 +229,7 @@ describe("Publishing Testing", () => {
     block?.transactions.forEach((tx) => {
       expect(tx.status.toBoolean()).toBe(true)
     })
-    for(let i = 0; i < clients.length; i++) {
+    for (let i = 0; i < clients.length; i++) {
       const clientBalanceKey = new BalancesKey({
         tokenId: TokenId.from(0),
         address: clients[i]
