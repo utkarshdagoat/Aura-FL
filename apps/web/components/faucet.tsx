@@ -1,7 +1,7 @@
 "use client";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Form, FormControl, FormField, FormItem, FormLabel } from "./ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
 import { Button } from "./ui/button";
 
@@ -52,7 +52,6 @@ export function Faucet({
           size={"lg"}
           type="submit"
           className="mt-6 w-full"
-          loading={loading}
           onClick={() => {
             wallet ?? onConnectWallet();
             wallet && onDrip();

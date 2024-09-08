@@ -3,6 +3,7 @@ const webpack = require("webpack");
 
 const nextConfig = {
   reactStrictMode: false,
+  transpilePackages: ["geist"],
   async headers() {
     return [
       {

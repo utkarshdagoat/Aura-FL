@@ -42,7 +42,7 @@ export const useBalancesStore = create<
       const key = BalancesKey.from(tokenId, PublicKey.fromBase58(address));
 
       const balance = await client.query.runtime.Balances.balances.get(key);
-
+      
       set((state) => {
         state.loading = false;
         state.balances[address] = balance?.toString() ?? "0";
@@ -53,12 +53,12 @@ export const useBalancesStore = create<
       const sender = PublicKey.fromBase58(address);
 
       const tx = await client.transaction(sender, async () => {
-        await balances.addBalance(tokenId, sender, Balance.from(1000));
+        await balances.addBalance(sender, Balance.from(1000));
       });
 
       await tx.sign();
       await tx.send();
-
+      console.log(tx)
       isPendingTransaction(tx.transaction);
       return tx.transaction;
     },
@@ -82,10 +82,10 @@ export const useFaucet = () => {
   const client = useClientStore();
   const balances = useBalancesStore();
   const wallet = useWalletStore();
-
+  
   return useCallback(async () => {
     if (!client.client || !wallet.wallet) return;
-
+    console.log("faucet")
     const pendingTransaction = await balances.faucet(
       client.client,
       wallet.wallet,

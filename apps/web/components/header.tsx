@@ -4,8 +4,9 @@ import Image from "next/image";
 // @ts-ignore
 import truncateMiddle from "truncate-middle";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Separator } from "@/components/ui/separator";
 import { Chain } from "./chain";
-import { Separator } from "./ui/separator";
+import { useBalancesStore, useObserveBalance } from "@/lib/stores/balances";
 
 export interface HeaderProps {
   loading: boolean;
@@ -50,8 +51,7 @@ export default function Header({
               </div>
             </div>
           )}
-          {/* connect wallet */}
-          <Button loading={loading} className="w-44" onClick={onConnectWallet}>
+          <Button className="w-44" onClick={onConnectWallet}>
             <div>
               {wallet ? truncateMiddle(wallet, 7, 7, "...") : "Connect wallet"}
             </div>

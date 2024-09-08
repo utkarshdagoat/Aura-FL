@@ -10,3 +10,4 @@ export function Chain({ height }: ChainProps) {
     </div>
   );
 }
+ 
