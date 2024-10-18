@@ -42,7 +42,7 @@
     <a href="https://github.com/utkarshdagoat/Aura-Fl"><strong>Explore the docs »</strong></a>
     <br />
     <br />
-    <a href="[https://github.com/utkarshdagoat/Aura-Fl](https://www.youtube.com/watch?v=sojpTZ8vMZY&t=8s)">View Demo</a>
+    <a href="https://www.youtube.com/watch?v=sojpTZ8vMZY&t=8s">View Demo</a>
     ·
     <a href="https://github.com/utkarshdagoat/Aura-Fl/issues/new?labels=bug&template=bug-report---.md">Report Bug</a>
     ·
